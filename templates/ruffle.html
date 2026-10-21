@@ -13,7 +13,7 @@
 	<link rel="stylesheet" href="css/tooltiplink.css"/>
 	<link rel="stylesheet" href="css/zbar.css"/>
 	<!-- JS -->
-	<script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+	<script src="https://unpkg.com/@ruffle-rs/ruffle@0.7.1"></script>
 	<script src="js/flash.js"></script>
 	<script src="js/session.js"></script>
 	<script src="js/empires.js"></script>
@@ -216,17 +216,20 @@
 													player.load({ // https://ruffle.rs/js-docs/master/interfaces/Config.URLLoadOptions.html
 														url: "/files/empire-s.assets.zgncdn.com/assets/109338/ZGame.109338.swf",
 														backgroundColor: "#333399",
-														allowScriptAccess: false,
+														allowScriptAccess: true, // ExternalInterface (getUserInfo, getFriendData...)
 														allowFullscreen: true,
 														quality: "high",
 														//autoplay: true,
-														parameters: '\
-															serverTime={{time}}\
-															&is_staging=true\
-															&debugMode=true\
-															&generateSchema=1\
-															&sn_app_url=\
-															&stats=1'
+														parameters: { // an object: a line-continued string leaks indentation into the values
+															serverTime: '{{time}}',
+															is_staging: 'true',
+															debugMode: 'true',
+															generateSchema: '1',
+															sn_app_url: '',
+															stats: '1',
+															// Ruffle only supports http(s) NetConnection URLs: absolute BASE_PATH
+															app_url: location.origin + '/127.0.0.1'
+														}
 													}).then(() => {
 														console.info("Ruffle successfully loaded the file");
 													}).catch((e) => {

@@ -490,6 +490,7 @@ def flashFile():
 
 
 @app.route("/gameSettings.xml")
+@app.route("/127.0.0.1gameSettings.xml")  # Ruffle: app_url base path
 def game_settings_file():
     # return send_from_directory_mod("assets/32995", "gameSettings.xml")
     # return send_from_directory_mod("assets/32995", "gameSettings.xml")
@@ -739,13 +740,42 @@ def send_from_directory_mod(directory, filename, **options):
     return mod_engine.mod.get(path)() if path in mod_engine.mod else send_from_directory(absolute_directory, filename, **options)
 
 
+def normalize_amf_arrays(value):
+    # Ruffle encodes AS3 Arrays as AMF ECMA arrays ({0: a, 1: b}), Flash Player sent strict arrays ([a, b])
+    if isinstance(value, dict):
+        for key in list(value.keys()):
+            value[key] = normalize_amf_arrays(value[key])
+        if (isinstance(value, pyamf.MixedArray) or type(value) is dict) and value \
+                and all(isinstance(key, int) for key in value) and sorted(value) == list(range(len(value))):
+            return [value[i] for i in range(len(value))]
+        return value
+    if isinstance(value, list):
+        return [normalize_amf_arrays(item) for item in value]
+    return value
+
+
+def unshare_amf_references(value):
+    # pyamf encodes repeated objects as AMF0 references, which Ruffle decodes as null: rebuild every container
+    if isinstance(value, dict):
+        copy = type(value)()
+        for key, item in value.items():
+            copy[key] = unshare_amf_references(item)
+        return copy
+    if isinstance(value, list):
+        return [unshare_amf_references(item) for item in value]
+    return value
+
+
 @app.route('/files/empire-s.assets.zgncdn.com/assets/109338/127.0.0.1flashservices/gateway.php', methods=['POST'])
+@app.route('/127.0.0.1flashservices/gateway.php', methods=['POST'])  # Ruffle: app_url base path
 def post_gateway():
     print("Gateway:")
     print(repr(request))
     # print("Data:")
     # print(request.data)
     resp_msg = remoting.decode(request.data)
+    for _, message in resp_msg.bodies:
+        message.body = normalize_amf_arrays(message.body)
     # print(resp_msg.headers)
     print(resp_msg.bodies)
     # print(resp_msg.bodies[0])
@@ -1175,7 +1205,7 @@ def post_gateway():
         "data": resps
     }
 
-    req = remoting.Response(emsg)
+    req = remoting.Response(unshare_amf_references(emsg))
     ev = remoting.Envelope(pyamf.AMF0)
     ev[resp_msg.bodies[0][0]] = req
     #  print(ev.headers)
