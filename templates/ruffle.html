@@ -13,7 +13,8 @@
 	<link rel="stylesheet" href="css/tooltiplink.css"/>
 	<link rel="stylesheet" href="css/zbar.css"/>
 	<!-- JS -->
-	<script src="https://unpkg.com/@ruffle-rs/ruffle@0.7.1"></script>
+	<!-- 0.7.1 leaves Flash components (fl.containers.UILoader) at 0x0, so Barracks unit images don't render -->
+	<script src="https://unpkg.com/@ruffle-rs/ruffle@0.8.0-nightly.2026.10.8"></script>
 	<script src="js/flash.js"></script>
 	<script src="js/session.js"></script>
 	<script src="js/empires.js"></script>
